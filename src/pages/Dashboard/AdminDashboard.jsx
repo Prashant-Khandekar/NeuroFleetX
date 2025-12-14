@@ -1,7 +1,12 @@
 import { FaBus, FaRoute, FaUsers, FaPlayCircle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import DashboardCard from "../../components/common/DashboardCard";
+import useThemeStore from "../../store/themeStore";
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const { darkMode } = useThemeStore();
+
   // Mock data (backend will replace later)
   const stats = {
     totalBuses: 42,
@@ -10,11 +15,27 @@ export default function AdminDashboard() {
     totalDrivers: 18,
   };
 
-  return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+  const cardBg = darkMode
+    ? "bg-[#2f2f2f] border-[#3d3d3d]"
+    : "bg-[#b3b3b3] border-[#9e9e9e]";
 
-      {/* Stats Grid */}
+  const textMuted = darkMode ? "text-gray-300" : "text-gray-700";
+
+  const actionBtn =
+    "p-5 rounded-xl border shadow transition hover:shadow-lg hover:scale-[1.02] bg-black text-white";
+
+  return (
+    <div className="space-y-10">
+
+      {/* ================= HEADER ================= */}
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+        <p className={textMuted}>
+          Control buses, routes, drivers and monitor live operations.
+        </p>
+      </div>
+
+      {/* ================= STATS GRID ================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
           title="Total Buses"
@@ -38,26 +59,56 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="mt-10">
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+      {/* ================= SYSTEM OVERVIEW ================= */}
+      <div className={`p-6 rounded-xl border shadow ${cardBg}`}>
+        <h2 className="text-xl font-semibold mb-2">
+          System Overview
+        </h2>
+        <p className={textMuted}>
+          NeuroFleetX helps you centrally manage public transport operations —
+          from assigning routes and drivers to tracking buses live on the map.
+        </p>
+      </div>
+
+      {/* ================= QUICK ACTIONS ================= */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Quick Actions</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
-          <button className="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition">
-            Manage Buses
+          <button
+            onClick={() => navigate("/dashboard/admin/buses")}
+            className={actionBtn}
+          >
+            🚍 Manage Buses
+            <p className="text-sm text-gray-300 mt-1">
+              Add, update or deactivate buses
+            </p>
           </button>
 
-          <button className="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition">
-            Manage Routes
+          <button
+            onClick={() => navigate("/dashboard/admin/routes")}
+            className={actionBtn}
+          >
+            🛣️ Manage Routes
+            <p className="text-sm text-gray-300 mt-1">
+              Define routes and stops
+            </p>
           </button>
 
-          <button className="bg-purple-600 text-white p-4 rounded-xl shadow hover:bg-purple-700 transition">
-            Live Tracking
+          <button
+            onClick={() => navigate("/dashboard/admin/live-tracking")}
+            className={actionBtn}
+          >
+            📡 Live Tracking
+            <p className="text-sm text-gray-300 mt-1">
+              Monitor all buses in real time
+            </p>
           </button>
 
         </div>
       </div>
+
     </div>
   );
 }

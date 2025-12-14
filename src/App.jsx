@@ -1,6 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 import "mapbox-gl/dist/mapbox-gl.css";
 
+// Home Page
+import Home from "./pages/Home/Home";
+
 // Auth Pages
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
@@ -13,12 +16,24 @@ import PassengerDashboard from "./pages/Dashboard/PassengerDashboard";
 // Layout
 import DashboardLayout from "./components/layout/DashboardLayout";
 
-// Other Pages
+// Admin Pages
 import ManageBuses from "./pages/Admin/ManageBuses";
 import ManageRoutes from "./pages/Admin/ManageRoutes";
 import ManageDrivers from "./pages/Admin/ManageDrivers";
 import LiveTracking from "./pages/Admin/LiveTracking";
+
+// Passenger Pages
+import PassengerTicketBooking from "./pages/Passenger/PassengerTicketBooking";
+import PassengerLiveTracking from "./pages/Passenger/PassengerLiveTracking";
+import MyTickets from "./pages/Passenger/MyTickets";
+
+// Driver Pages
+import MyRoute from "./pages/Driver/MyRoute";
+import DriverLiveLocation from "./pages/Driver/LiveLocation";
+
+// Other
 import NotAuthorized from "./pages/NotAuthorized";
+
 // Protected Routes
 import PrivateRoute from "./routes/PrivateRoute";
 import RoleRoute from "./routes/RoleRoute";
@@ -26,6 +41,9 @@ import RoleRoute from "./routes/RoleRoute";
 function App() {
   return (
     <Routes>
+
+      {/* Home Page */}
+      <Route path="/" element={<Home />} />
 
       {/* Public Pages */}
       <Route path="/login" element={<Login />} />
@@ -44,15 +62,17 @@ function App() {
               </DashboardLayout>
             }
           />
+
           <Route
-              path="/dashboard/admin/buses"
-              element={
-                <DashboardLayout>
-                  <ManageBuses />
-                </DashboardLayout>
-              }
+            path="/dashboard/admin/buses"
+            element={
+              <DashboardLayout>
+                <ManageBuses />
+              </DashboardLayout>
+            }
           />
-           <Route
+
+          <Route
             path="/dashboard/admin/routes"
             element={
               <DashboardLayout>
@@ -60,6 +80,7 @@ function App() {
               </DashboardLayout>
             }
           />
+
           <Route
             path="/dashboard/admin/drivers"
             element={
@@ -68,7 +89,8 @@ function App() {
               </DashboardLayout>
             }
           />
-           <Route
+
+          <Route
             path="/dashboard/admin/live-tracking"
             element={
               <DashboardLayout>
@@ -76,8 +98,6 @@ function App() {
               </DashboardLayout>
             }
           />
-
-           
         </Route>
 
         {/* DRIVER */}
@@ -87,6 +107,22 @@ function App() {
             element={
               <DashboardLayout>
                 <DriverDashboard />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/driver/my-route"
+            element={
+              <DashboardLayout>
+                <MyRoute />
+              </DashboardLayout>
+            }
+          />   
+          <Route
+            path="/dashboard/driver/live-tracking"
+            element={
+              <DashboardLayout>
+                <DriverLiveLocation />
               </DashboardLayout>
             }
           />
@@ -102,6 +138,33 @@ function App() {
               </DashboardLayout>
             }
           />
+
+          {/* ✅ FIX ADDED HERE */}
+          <Route
+            path="/dashboard/passenger/book-ticket"
+            element={
+              <DashboardLayout>
+                <PassengerTicketBooking />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/dashboard/passenger/live-tracking"
+            element={
+              <DashboardLayout>
+                <PassengerLiveTracking />
+              </DashboardLayout>
+            }
+          />     
+          <Route
+            path="/dashboard/passenger/my-tickets"
+            element={
+              <DashboardLayout>
+                <MyTickets />
+              </DashboardLayout>
+            }
+          />
+     
         </Route>
 
       </Route>

@@ -1,8 +1,15 @@
 import { useState } from "react";
 import useDriverStore from "../../store/driverStore";
+import useThemeStore from "../../store/themeStore";
 
 export default function ManageDrivers() {
   const { drivers, addDriver, updateDriver, deleteDriver } = useDriverStore();
+  const { darkMode } = useThemeStore();
+
+  const cardBg = darkMode ? "bg-[#2f2f2f]" : "bg-[#b3b3b3]";
+  const inputBg = darkMode
+    ? "bg-[#1f1f1f] border-[#3d3d3d] text-white"
+    : "bg-[#d0d0d0] border-[#9e9e9e]";
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState(null);
@@ -13,69 +20,61 @@ export default function ManageDrivers() {
     status: "Active",
   });
 
-  const openAddModal = () => {
-    setEditingDriver(null);
-    setForm({ name: "", phone: "", license: "", status: "Active" });
-    setShowModal(true);
-  };
-
-  const openEditModal = (driver) => {
-    setEditingDriver(driver.id);
-    setForm(driver);
-    setShowModal(true);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (editingDriver) updateDriver(editingDriver, form);
-    else addDriver(form);
-
+    editingDriver ? updateDriver(editingDriver, form) : addDriver(form);
     setShowModal(false);
   };
 
   return (
-    <>
-      <h1 className="text-3xl font-bold mb-6">Manage Drivers</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Manage Drivers</h1>
+        <button
+          onClick={() => {
+            setEditingDriver(null);
+            setForm({ name: "", phone: "", license: "", status: "Active" });
+            setShowModal(true);
+          }}
+          className="px-5 py-2 bg-black text-white rounded-lg"
+        >
+          + Add Driver
+        </button>
+      </div>
 
-      <button
-        onClick={openAddModal}
-        className="mb-5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-      >
-        + Add New Driver
-      </button>
-
-      <div className="bg-white rounded-lg shadow p-5">
-        <table className="w-full text-left border-collapse">
+      <div className={`rounded-xl border shadow ${cardBg}`}>
+        <table className="w-full">
           <thead>
             <tr className="border-b">
               <th className="p-3">Name</th>
               <th className="p-3">Phone</th>
-              <th className="p-3">License No.</th>
+              <th className="p-3">License</th>
               <th className="p-3">Status</th>
-              <th className="p-3 text-center">Actions</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {drivers.map((driver) => (
-              <tr key={driver.id} className="border-b hover:bg-gray-100">
-                <td className="p-3">{driver.name}</td>
-                <td className="p-3">{driver.phone}</td>
-                <td className="p-3">{driver.license}</td>
-                <td className="p-3">{driver.status}</td>
-
-                <td className="p-3 text-center flex gap-3 justify-center">
+            {drivers.map((d) => (
+              <tr key={d.id} className="border-b">
+                <td className="p-3">{d.name}</td>
+                <td className="p-3">{d.phone}</td>
+                <td className="p-3">{d.license}</td>
+                <td className="p-3">{d.status}</td>
+                <td className="p-3 flex gap-2 justify-center">
                   <button
-                    className="px-3 py-1 bg-yellow-500 text-white rounded"
-                    onClick={() => openEditModal(driver)}
+                    onClick={() => {
+                      setEditingDriver(d.id);
+                      setForm(d);
+                      setShowModal(true);
+                    }}
+                    className="px-3 py-1 bg-gray-700 text-white rounded"
                   >
                     Edit
                   </button>
-
                   <button
-                    className="px-3 py-1 bg-red-600 text-white rounded"
-                    onClick={() => deleteDriver(driver.id)}
+                    onClick={() => deleteDriver(d.id)}
+                    className="px-3 py-1 bg-black text-white rounded"
                   >
                     Delete
                   </button>
@@ -86,81 +85,57 @@ export default function ManageDrivers() {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-
-            <h2 className="text-xl font-bold mb-4">
-              {editingDriver ? "Edit Driver" : "Add New Driver"}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className={`p-6 rounded-xl w-full max-w-md ${cardBg}`}>
+            <h2 className="text-xl font-semibold mb-4">
+              {editingDriver ? "Edit Driver" : "Add Driver"}
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-
-              <input
-                type="text"
-                placeholder="Driver Name"
-                className="w-full p-2 border rounded"
-                value={form.name}
-                onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
-                }
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="Phone Number"
-                className="w-full p-2 border rounded"
-                value={form.phone}
-                onChange={(e) =>
-                  setForm({ ...form, phone: e.target.value })
-                }
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="License Number"
-                className="w-full p-2 border rounded"
-                value={form.license}
-                onChange={(e) =>
-                  setForm({ ...form, license: e.target.value })
-                }
-                required
-              />
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {["name", "phone", "license"].map((field) => (
+                <input
+                  key={field}
+                  placeholder={field.toUpperCase()}
+                  className={`w-full p-2 rounded border ${inputBg}`}
+                  value={form[field]}
+                  onChange={(e) =>
+                    setForm({ ...form, [field]: e.target.value })
+                  }
+                  required
+                />
+              ))}
 
               <select
-                className="w-full p-2 border rounded"
+                className={`w-full p-2 rounded border ${inputBg}`}
                 value={form.status}
                 onChange={(e) =>
                   setForm({ ...form, status: e.target.value })
                 }
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option>Active</option>
+                <option>Inactive</option>
               </select>
 
               <div className="flex justify-end gap-3 pt-3">
                 <button
-                  onClick={() => setShowModal(false)}
                   type="button"
-                  className="px-4 py-2 bg-gray-300 rounded"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-500 rounded"
                 >
                   Cancel
                 </button>
-
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded"
-                  >
-                    {editingDriver ? "Save Changes" : "Add Driver"}
-                  </button>
-                </div>
-              </form>
-            </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-black text-white rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }

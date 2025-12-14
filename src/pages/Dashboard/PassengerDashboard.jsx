@@ -1,90 +1,154 @@
 import { useNavigate } from "react-router-dom";
+import useThemeStore from "../../store/themeStore";
+import usePassengerBookingStore from "../../store/passengerBookingStore";
 
 export default function PassengerDashboard() {
   const navigate = useNavigate();
+  const { darkMode } = useThemeStore();
+  const { bookings } = usePassengerBookingStore();
+
+  // 🎯 Find upcoming (active) booking
+  const upcomingTrip = bookings.find(
+    (b) => b.status === "ACTIVE"
+  );
+
+  const cardBg = darkMode
+    ? "bg-[#2f2f2f] border-[#3d3d3d]"
+    : "bg-[#b3b3b3] border-[#9e9e9e]";
+
+  const textMuted = darkMode ? "text-gray-300" : "text-gray-700";
 
   return (
-    <>
-      {/* Header */}
-      <h1 className="text-3xl font-bold mb-3">Passenger Dashboard</h1>
-      <p className="text-gray-600 mb-8">
-        Welcome! Manage your travel, book tickets, and track buses in real-time.
-      </p>
+    <div className="space-y-10">
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+      {/* ================= HEADER ================= */}
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Passenger Dashboard</h1>
+        <p className={`${textMuted}`}>
+          Manage your travel, book tickets, and track buses in real-time.
+        </p>
+      </div>
 
-        {/* Live Tracking */}
+      {/* ================= QUICK ACTIONS ================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
         <div
           onClick={() => navigate("/dashboard/passenger/live-tracking")}
-          className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer"
+          className={`p-6 rounded-xl border shadow cursor-pointer transition hover:shadow-lg ${cardBg}`}
         >
-          <h2 className="text-xl font-semibold mb-2">Live Bus Tracking</h2>
-          <p className="text-gray-600">
-            Track buses in real-time on the city map.
+          <h2 className="text-xl font-semibold mb-2">
+            Live Bus Tracking
+          </h2>
+          <p className={textMuted}>
+            Track your booked bus on the map.
           </p>
         </div>
 
-        {/* Book Ticket */}
         <div
           onClick={() => navigate("/dashboard/passenger/book-ticket")}
-          className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer"
+          className={`p-6 rounded-xl border shadow cursor-pointer transition hover:shadow-lg ${cardBg}`}
         >
-          <h2 className="text-xl font-semibold mb-2">Book Ticket</h2>
-          <p className="text-gray-600">
-            Choose your destination and reserve your seat instantly.
+          <h2 className="text-xl font-semibold mb-2">
+            Book Ticket
+          </h2>
+          <p className={textMuted}>
+            Choose routes and reserve your seat.
           </p>
         </div>
 
-        {/* My Tickets */}
         <div
-          onClick={() => navigate("/dashboard/passenger/my-tickets")}
-          className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition cursor-pointer"
+          onClick={() => navigate("/dashboard/passenger/book-ticket")}
+          className={`p-6 rounded-xl border shadow cursor-pointer transition hover:shadow-lg ${cardBg}`}
         >
-          <h2 className="text-xl font-semibold mb-2">My Tickets</h2>
-          <p className="text-gray-600">
-            View your active and past tickets.
+          <h2 className="text-xl font-semibold mb-2">
+            My Tickets
+          </h2>
+          <p className={textMuted}>
+            View active and past bookings.
           </p>
         </div>
+
       </div>
 
-      {/* Upcoming Trip (Mock Data) */}
-      <h2 className="text-2xl font-semibold mb-3">Upcoming Trip</h2>
+      {/* ================= UPCOMING TRIP ================= */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Upcoming Trip</h2>
 
-      <div className="bg-white p-5 rounded-xl shadow mb-10">
-        <p className="text-gray-700 mb-1">
-          <strong>Route:</strong> Pune Station → Hinjewadi Phase 3
-        </p>
-        <p className="text-gray-700 mb-1">
-          <strong>Time:</strong> Tomorrow 9:00 AM
-        </p>
-        <p className="text-gray-700 mb-1">
-          <strong>Seat:</strong> 12
-        </p>
-        <p className="text-gray-700">
-          <strong>Status:</strong> Confirmed
-        </p>
+        {upcomingTrip ? (
+          <div className={`p-6 rounded-xl border shadow ${cardBg}`}>
+            <p className="mb-1">
+              <strong>Route:</strong> {upcomingTrip.routeName}
+            </p>
+            <p className="mb-1">
+              <strong>Date:</strong> {upcomingTrip.travelDate}
+            </p>
+            <p className="mb-1">
+              <strong>Passengers:</strong> {upcomingTrip.passengers}
+            </p>
+            <p>
+              <strong>Status:</strong>{" "}
+              <span className="font-semibold">
+                {upcomingTrip.status}
+              </span>
+            </p>
+
+            <button
+              onClick={() =>
+                navigate("/dashboard/passenger/live-tracking")
+              }
+              className="mt-4 px-5 py-2 rounded-lg bg-black text-white hover:opacity-80 transition"
+            >
+              Track This Trip
+            </button>
+          </div>
+        ) : (
+          <div className={`p-6 rounded-xl border shadow ${cardBg}`}>
+            <p className={`${textMuted} mb-4`}>
+              You have no upcoming trips.
+            </p>
+
+            <button
+              onClick={() =>
+                navigate("/dashboard/passenger/book-ticket")
+              }
+              className="px-5 py-2 rounded-lg bg-black text-white hover:opacity-80 transition"
+            >
+              Book Your First Ticket
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Simple Stats */}
-      <h2 className="text-2xl font-semibold mb-3">Travel Stats</h2>
+      {/* ================= STATS ================= */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Travel Stats</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h3 className="text-lg font-semibold">Trips Completed</h3>
-          <p className="text-3xl font-bold mt-2 text-blue-600">14</p>
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h3 className="text-lg font-semibold">Tickets Booked</h3>
-          <p className="text-3xl font-bold mt-2 text-green-600">23</p>
-        </div>
+          <div className={`p-6 rounded-xl border shadow ${cardBg}`}>
+            <h3 className="text-lg font-semibold">Trips Completed</h3>
+            <p className="text-3xl font-bold mt-2">
+              {bookings.filter((b) => b.status === "COMPLETED").length}
+            </p>
+          </div>
 
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h3 className="text-lg font-semibold">Favorite Route</h3>
-          <p className="text-xl mt-2 font-medium">Katraj → Swargate</p>
+          <div className={`p-6 rounded-xl border shadow ${cardBg}`}>
+            <h3 className="text-lg font-semibold">Tickets Booked</h3>
+            <p className="text-3xl font-bold mt-2">
+              {bookings.length}
+            </p>
+          </div>
+
+          <div className={`p-6 rounded-xl border shadow ${cardBg}`}>
+            <h3 className="text-lg font-semibold">Favorite Route</h3>
+            <p className="text-xl mt-2 font-medium">
+              {bookings[0]?.routeName || "—"}
+            </p>
+          </div>
+
         </div>
       </div>
-    </>
+
+    </div>
   );
 }

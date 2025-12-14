@@ -1,19 +1,26 @@
 import { create } from "zustand";
 
-const useDriverRouteStore = create((set) => ({
-  driverRouteCoordinates: [
-    [73.8567, 18.5204], // Pune main area
-    [73.8620, 18.5215],
-    [73.8700, 18.5230],
-    [73.8805, 18.5255],
-    [73.8920, 18.5300], // sample path
-  ],
-
-  setDriverRouteCoordinates: (coords) =>
-    set({ driverRouteCoordinates: coords }),
-
-  clearDriverRoute: () =>
-    set({ driverRouteCoordinates: [] }),
+const useDriverRouteStore = create(() => ({
+  assignedRoute: {
+    id: "RT-101",
+    routeName: "Pune Station → Hinjewadi Phase 3",
+    busNumber: "MH12 AB 1234",
+    startTime: "09:00 AM",
+    endTime: "11:15 AM",
+    totalStops: 8,
+    stops: [
+      "Pune Station",
+      "Shivajinagar",
+      "University Circle",
+      "Baner",
+      "Balewadi",
+      "Wakad",
+      "Hinjewadi Phase 1",
+      "Hinjewadi Phase 3",
+    ],
+    distance: "28 km",
+    status: "ACTIVE",
+  },
 }));
 
 export default useDriverRouteStore;

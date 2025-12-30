@@ -1,14 +1,32 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import usePassengerBookingStore from "../../store/passengerBookingStore";
 import useThemeStore from "../../store/themeStore";
+import api from '../../services/api';
+
 
 export default function MyTickets() {
   const navigate = useNavigate();
   const { darkMode } = useThemeStore();
 
-  const bookings =
-    usePassengerBookingStore((state) => state.bookings) || [];
+  const [dbBookings, setDbBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const userId = localStorage.getItem("userId") || "user_123"
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const res = await api.get(`/bookings/user/${userId}`);
+        setDbBookings([...res.data].reverse());
+      } catch (err) {
+        console.error("Error fetching tickets:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, [userId]);
+
 
   const cardBg = darkMode
     ? "bg-[#2f2f2f] border-[#3d3d3d]"
@@ -16,8 +34,10 @@ export default function MyTickets() {
 
   const textMuted = darkMode ? "text-gray-300" : "text-gray-700";
 
+  if (loading) return <div className="p-10">Loading Your Tickets...</div>;
+
   /* ================= EMPTY STATE ================= */
-  if (bookings.length === 0) {
+  if (dbBookings.length === 0) {
     return (
       <div className={`p-10 rounded-xl border shadow ${cardBg}`}>
         <h2 className="text-2xl font-semibold mb-3">
@@ -44,14 +64,15 @@ export default function MyTickets() {
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">My Tickets</h1>
 
-      {bookings.map((ticket, index) => {
+      {dbBookings.map((ticket, index) => {
         if (!ticket) return null;
 
         const {
           id,
           routeName,
           travelDate,
-          passengers,
+          seatNumber,
+          busId,
           busNumber,
           status,
           stops = [],
@@ -63,8 +84,8 @@ export default function MyTickets() {
           ticketId: id,
           route: routeName,
           date: travelDate,
-          passengers,
-          bus: busNumber,
+          seat: seatNumber,
+          bus: busNumber || busId,
         });
 
         return (
@@ -81,12 +102,12 @@ export default function MyTickets() {
                 </h2>
 
                 <p><strong>Date:</strong> {travelDate}</p>
-                <p><strong>Passengers:</strong> {passengers}</p>
-                <p><strong>Bus:</strong> {busNumber}</p>
+                <p><strong>Seat Number:</strong> S-{seatNumber}</p>
+                <p><strong>Bus:</strong> {busNumber || busId || "N/A"}</p>
                 <p><strong>Status:</strong> {status}</p>
 
                 <p>
-                  <strong>Seats:</strong>{" "}
+                  <strong>Your Seat:</strong>{seatNumber} (Confirmed)
                   {reservedSeats ?? 0}/{totalSeats ?? "—"}
                 </p>
 
@@ -116,10 +137,10 @@ export default function MyTickets() {
               </div>
             </div>
 
-            {status === "ACTIVE" && (
+            {(status === "ACTIVE" || status === "CONFIRMED") && (
               <button
                 onClick={() =>
-                  navigate("/dashboard/passenger/live-tracking")
+                  navigate(`/dashboard/passenger/live-tracking?busId=${busId}`)
                 }
                 className="mt-6 px-5 py-2 rounded-lg bg-black text-white hover:opacity-80"
               >

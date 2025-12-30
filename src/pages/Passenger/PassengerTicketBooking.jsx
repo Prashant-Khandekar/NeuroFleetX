@@ -1,34 +1,19 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import useThemeStore from "../../store/themeStore";
-import usePassengerBookingStore from "../../store/passengerBookingStore";
+import api from '../../services/api';
+import { useNavigate } from "react-router-dom";
 
 export default function PassengerTicketBooking() {
   const { darkMode } = useThemeStore();
-  const { bookings, bookTicket } = usePassengerBookingStore();
-
-  // 🔹 Mock Available Trips (Frontend Only)
-  const availableTrips = [
-    {
-      busId: 1,
-      busNumber: "MH12 AB 1234",
-      route: "Pune Station → Hinjewadi",
-      stops: ["Pune Station", "Shivajinagar", "Baner", "Hinjewadi"],
-      totalSeats: 40,
-      reservedSeats: 22,
-    },
-    {
-      busId: 2,
-      busNumber: "MH14 XY 9876",
-      route: "Swargate → Katraj",
-      stops: ["Swargate", "Bibwewadi", "Katraj"],
-      totalSeats: 35,
-      reservedSeats: 10,
-    },
-  ];
+  const navigate = useNavigate();
 
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [passengers, setPassengers] = useState(1);
+  const [availableTrips, setAvailableTrips] = useState([]);
   const [date, setDate] = useState("");
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const userId = localStorage.getItem("userId") || "user_123";
 
   const bgCard = darkMode
     ? "bg-[#2f2f2f] border-[#3d3d3d]"
@@ -38,22 +23,64 @@ export default function PassengerTicketBooking() {
     ? "bg-[#3a3a3a] hover:bg-[#4a4a4a]"
     : "bg-[#8a8a8a] hover:bg-[#7a7a7a]";
 
-  const handleBooking = () => {
+   useEffect(() => {
+    const initData = async () => {
+      try {
+        setLoading(true);
+        // Fetch History
+        const historyRes = await api.get(`/bookings/user/${userId}`);
+        if(historyRes.data) setBookings([...historyRes.data].reverse());
+        
+        
+        const busRes = await api.get('/buses'); 
+        if(busRes.data) setAvailableTrips(busRes.data);
+      } catch (err) {
+        console.error("Fetch Error:", err);
+      }finally {
+        setLoading(false);
+      }
+    };
+    initData();
+  }, [userId]);
+
+
+
+const handleBooking = async () => {
     if (!selectedTrip || !date) return alert("Select trip & date");
+     
+   const idFromTrip = selectedTrip._id || selectedTrip.id;
 
-    if (passengers > selectedTrip.totalSeats - selectedTrip.reservedSeats) {
-      return alert("Not enough seats available");
-    }
 
-    bookTicket({
-      busId: selectedTrip.busId,
-      routeName: selectedTrip.route,
+  if (!idFromTrip) {
+    console.error("No ID found in:", selectedTrip);
+    return alert("Bus ID missing. Please check console.");
+  }
+
+  try {
+      const payload = {
+      userId: "user_123", 
+      busId: idFromTrip,
+      routeName: selectedTrip.route?.name || "General Route",
       travelDate: date,
-      passengers,
-    });
+      passengers: parseInt(passengers) || 1, 
+      //seatNumber: Math.floor(Math.random() * 40) + 1,
+      status: "CONFIRMED"
+    };
 
-    alert("🎟 Ticket booked successfully");
+    console.log("Sending Booking Payload:", payload);
+
+
+      const res = await api.post('/bookings/book', payload);
+      if (res.status === 200 || res.status === 201) {
+        alert("🎟 Ticket Booked Successfully!");
+        navigate("/dashboard/passenger");
+      }
+    } catch (err) {
+      alert("Booking Error: " + (err.response?.data || "Server down"));
+    }
   };
+  
+  if (loading) return <div className="p-10 text-center font-bold">Fetching Real-time Buses...</div>;
 
   return (
     <div className="max-w-6xl mx-auto space-y-10">
@@ -64,30 +91,41 @@ export default function PassengerTicketBooking() {
 
         <div className="grid md:grid-cols-2 gap-6">
           {availableTrips.map((trip) => {
-            const availableSeats =
-              trip.totalSeats - trip.reservedSeats;
+             const totalCount = trip.totalSeats || trip.capacity || 0;
+           const availableCount = (trip.availableSeats !== undefined && trip.availableSeats !== null && trip.availableSeats !== 0) 
+    ? trip.availableSeats 
+    
+    : (totalCount - (trip.reservedSeats || 0));
 
             return (
               <div
-                key={trip.busId}
+                key={trip.id || trip._id || Math.random()}
                 onClick={() => setSelectedTrip(trip)}
                 className={`p-6 rounded-xl border cursor-pointer transition
                 ${bgCard}
                 ${
-                  selectedTrip?.busId === trip.busId
+                 (selectedTrip?.id === trip.id || selectedTrip?._id === trip._id)
                     ? "ring-2 ring-black"
                     : ""
                 }`}
               >
                 <h2 className="text-xl font-semibold mb-2">
-                  {trip.route}
+                  {trip.routeName || "General Route"}
                 </h2>
 
                 <p><strong>Bus:</strong> {trip.busNumber}</p>
-                <p><strong>Stops:</strong> {trip.stops.join(" → ")}</p>
-                <p><strong>Total Seats:</strong> {trip.totalSeats}</p>
-                <p><strong>Reserved:</strong> {trip.reservedSeats}</p>
-                <p><strong>Available:</strong> {availableSeats}</p>
+                <p><strong>Route Path:</strong> 
+  <span className="ml-2 text-blue-600 font-medium">
+  {trip.route?.origin} → 
+    {trip.route?.stops?.length > 0 && 
+      ` ${trip.route.stops.map(stop => stop.name).join(" → ")} → `
+    }
+    {trip.route?.destination}
+  </span>
+</p>
+                <p><strong>Total Seats:</strong> {totalCount}</p>
+                <p><strong>Reserved:</strong> {trip.reservedSeats ?? (trip.capacity - (trip.availableSeats || 0))}</p>
+                <p><strong>Available:</strong> {trip.availableSeats ?? 0}</p>
               </div>
             );
           })}
@@ -140,7 +178,7 @@ export default function PassengerTicketBooking() {
                 <tr className="border-b">
                   <th className="p-3 text-left">Route</th>
                   <th className="p-3">Date</th>
-                  <th className="p-3">Passengers</th>
+                  <th className="p-3">Seat No.</th>
                   <th className="p-3">Status</th>
                 </tr>
               </thead>
@@ -148,9 +186,9 @@ export default function PassengerTicketBooking() {
               <tbody>
                 {bookings.map((b) => (
                   <tr key={b.id} className="border-b">
-                    <td className="p-3">{b.routeName}</td>
-                    <td className="p-3">{b.travelDate}</td>
-                    <td className="p-3 text-center">{b.passengers}</td>
+                    <td className="p-3">{b.routeName || "N/A"}</td>
+                    <td className="p-3">{b.travelDate || "No Date"}</td>
+                    <td className="p-3 text-center">{b.seatNumber}</td>
                     <td className="p-3 text-center font-semibold">
                       {b.status}
                     </td>

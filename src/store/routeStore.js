@@ -2,22 +2,11 @@ import { create } from "zustand";
 
 const useRouteStore = create((set) => ({
   routes: [
-    {
-      id: 1,
-      name: "Route A",
-      origin: "City Center",
-      destination: "Tech Park",
-      stops: 14,
-    },
-    {
-      id: 2,
-      name: "Route B",
-      origin: "Metro Station",
-      destination: "Industrial Area",
-      stops: 9,
-    },
   ],
 
+  setRoutes: (data) => set({ routes: data }),
+  // Function to add a new route to the list
+  
   addRoute: (route) =>
     set((state) => ({
       routes: [
@@ -40,3 +29,4 @@ const useRouteStore = create((set) => ({
 }));
 
 export default useRouteStore;
+

@@ -1,31 +1,134 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
+import api from "../../services/api";
 import useBusStore from "../../store/busStore";
 import useThemeStore from "../../store/themeStore";
 
 export default function ManageBuses() {
-  const { buses, addBus, updateBus, deleteBus } = useBusStore();
-  const { darkMode } = useThemeStore();
+    const { buses, addBus, updateBus, deleteBus, setBuses } = useBusStore();
+    const { darkMode } = useThemeStore();
+    const cardBg = darkMode ? "bg-[#2f2f2f]" : "bg-[#b3b3b3]";
 
-  const cardBg = darkMode ? "bg-[#2f2f2f]" : "bg-[#b3b3b3]";
   const tableHover = darkMode ? "hover:bg-[#3a3a3a]" : "hover:bg-gray-200";
+
   const inputBg = darkMode
+
     ? "bg-[#1f1f1f] border-[#3d3d3d] text-white"
+
     : "bg-[#d0d0d0] border-[#9e9e9e]";
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingBus, setEditingBus] = useState(null);
-  const [form, setForm] = useState({
-    number: "",
-    driver: "",
-    capacity: "",
-    status: "Active",
-  });
+    // Local States
+    const [routes, setRoutes] = useState([]); // To store routes for the dropdown
+    const [showModal, setShowModal] = useState(false);
+    const [editingBus, setEditingBus] = useState(null); // Track if we are editing
+    const [form, setForm] = useState({
+        busNumber: "",
+        driverName: "",
+        capacity: "",
+        status: "Active",
+        routeId: ""
+    });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    editingBus ? updateBus(editingBus, form) : addBus(form);
-    setShowModal(false);
-  };
+     // to fetch data from the backend
+
+   useEffect(() => {
+
+    const fetchBuses = async () => {
+        try {
+        const response = await api.get('/buses');
+            setBuses(response.data);
+            console.log("Backend Data:", response.data);
+            const routeResponse = await api.get('/admin/routes') 
+
+            setRoutes(routeResponse.data); 
+
+            console.log("Routes in Dropdown:", routeResponse.data);
+
+        } catch (error) {
+
+            console.error("Error fetching buses:", error);
+
+        }
+
+    };
+
+    fetchBuses();
+
+    }, []);// [] means that the page will be loaded only once
+
+
+
+    // 🎯 Handle Delete
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure you want to delete this bus?")) {
+            try {
+                await api.delete(`/buses/${id}`);
+                deleteBus(id);
+                alert("Bus deleted successfully!");
+            } catch (error) {
+                console.error("Delete failed:", error);
+            }
+        }
+    };
+
+
+    // 🎯 Handle Add/Update Submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const busPayload = {
+                busNumber: form.busNumber,
+                driverName: form.driverName,
+                capacity: form.capacity,
+                status: form.status,
+                route: { id: form.routeId } // Linking Route as an object
+            };
+             // Check if we are editing or adding new
+
+        if (editingBus) {
+
+            // STEP 1: If editing, use PUT request with the specific ID
+
+            const response = await api.put(`/buses/${editingBus.id || editingBus._id}`, busPayload);
+
+            
+
+            // Update the frontend store/state
+
+            updateBus(response.data); 
+
+            alert("Bus updated successfully!");
+
+        } else {
+
+            // STEP 2: If no editingBus, create a new entry
+
+            const response = await api.post('/buses', busPayload);
+
+            addBus(response.data);
+
+            alert("New bus added successfully!");
+
+        }
+
+
+
+        // Common cleanup after both actions
+
+        setShowModal(false);
+
+        setEditingBus(null); // Reset editing state
+
+        setForm({ busNumber: "", driverName: "", capacity: "", status: "Active", routeId: "" });
+
+    } catch (error) {
+
+        console.error("Operation failed:", error);
+
+        alert("Error saving bus data!");
+
+    }
+
+};
 
   return (
     <div className="space-y-6">
@@ -34,7 +137,7 @@ export default function ManageBuses() {
         <button
           onClick={() => {
             setEditingBus(null);
-            setForm({ number: "", driver: "", capacity: "", status: "Active" });
+            setForm({ busNumber: "", driverName: "", capacity: "", status: "Active" });
             setShowModal(true);
           }}
           className="px-5 py-2 bg-black text-white rounded-lg hover:opacity-80"
@@ -58,15 +161,21 @@ export default function ManageBuses() {
           <tbody>
             {buses.map((bus) => (
               <tr key={bus.id} className={`${tableHover} border-b`}>
-                <td className="p-3">{bus.number}</td>
-                <td className="p-3">{bus.driver}</td>
+                <td className="p-3">{bus.busNumber}</td>
+                <td className="p-3">{bus.driverName || "No Driver"}</td>
                 <td className="p-3">{bus.capacity}</td>
                 <td className="p-3">{bus.status}</td>
                 <td className="p-3 flex gap-2 justify-center">
                   <button
                     onClick={() => {
-                      setEditingBus(bus.id);
-                      setForm(bus);
+                      setEditingBus(bus);
+                      setForm({
+                        busNumber: bus.busNumber,
+                         driverName: bus.driverName,
+                           capacity: bus.capacity,
+                             status: bus.status,
+                              routeId: bus.route?.id || bus.route?._id || "" 
+                              });
                       setShowModal(true);
                     }}
                     className="px-3 py-1 bg-gray-700 text-white rounded"
@@ -74,7 +183,7 @@ export default function ManageBuses() {
                     Edit
                   </button>
                   <button
-                    onClick={() => deleteBus(bus.id)}
+                    onClick={() => handleDelete(bus.id)}
                     className="px-3 py-1 bg-black text-white rounded"
                   >
                     Delete
@@ -94,7 +203,7 @@ export default function ManageBuses() {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              {["number", "driver", "capacity"].map((field) => (
+             {["busNumber", "driverName", "capacity"].map((field) => (
                 <input
                   key={field}
                   placeholder={field.toUpperCase()}
@@ -117,6 +226,24 @@ export default function ManageBuses() {
                 <option>Active</option>
                 <option>Inactive</option>
               </select>
+
+              <select 
+                 value={form.routeId} 
+                 onChange={(e) => setForm({...form, routeId: e.target.value})}
+                  className={`w-full p-2 border rounded mb-4 ${inputBg}`}
+                      >
+                      <option value="">Select Route</option>
+                        {routes && routes.length > 0 ? (
+    routes.map(r => (
+      <option key={r.id || r._id} value={r.id || r._id}>
+        {/* If 'name' is empty, show origin and destination */}
+        {r.name ? r.name : `${r.origin} to ${r.destination}`} 
+      </option>
+    ))
+  ) : (
+    <option disabled>Loading or No Routes Found...</option>
+  )}
+</select>
 
               <div className="flex justify-end gap-3 pt-3">
                 <button

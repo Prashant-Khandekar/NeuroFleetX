@@ -17,18 +17,20 @@ const useDriverStore = create((set) => ({
       status: "Inactive",
     },
   ],
+ 
+  setDrivers: (data) => set({ drivers: data }),
 
+  
   addDriver: (driver) =>
     set((state) => ({
       drivers: [...state.drivers, { id: Date.now(), ...driver }],
     })),
 
-  updateDriver: (id, updatedDriver) =>
-    set((state) => ({
-      drivers: state.drivers.map((d) =>
-        d.id === id ? { ...d, ...updatedDriver } : d
-      ),
-    })),
+  updateDriver: (updated) => set((state) => ({
+    drivers: state.drivers.map((d) => 
+      ((d.id || d._id) === (updated.id || updated._id) ? updated : d)
+    )
+})),
 
   deleteDriver: (id) =>
     set((state) => ({

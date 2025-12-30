@@ -2,18 +2,30 @@ import { FaBus, FaRoute, FaUsers, FaPlayCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import DashboardCard from "../../components/common/DashboardCard";
 import useThemeStore from "../../store/themeStore";
+import { useEffect, useState } from "react"; // Hook import
+import api from "../../services/api"; //  axios instance
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { darkMode } = useThemeStore();
-
-  // Mock data (backend will replace later)
-  const stats = {
-    totalBuses: 42,
-    activeBuses: 31,
-    totalRoutes: 12,
-    totalDrivers: 18,
-  };
+  const [stats, setStats] = useState({
+    totalBuses: 0,
+    activeBuses: 0,
+    totalRoutes: 0,
+    totalDrivers: 0,
+  });
+  
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get("/admin/stats/summary");
+        setStats(response.data); 
+      } catch (error) {
+        console.error("Dashboard data load error:", error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const cardBg = darkMode
     ? "bg-[#2f2f2f] border-[#3d3d3d]"

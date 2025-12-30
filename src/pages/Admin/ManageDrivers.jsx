@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect} from "react";
+import api from "../../services/api"; 
 import useDriverStore from "../../store/driverStore";
 import useThemeStore from "../../store/themeStore";
 
 export default function ManageDrivers() {
-  const { drivers, addDriver, updateDriver, deleteDriver } = useDriverStore();
+ const { drivers, setDrivers, addDriver, deleteDriver, updateDriver } = useDriverStore();
   const { darkMode } = useThemeStore();
 
   const cardBg = darkMode ? "bg-[#2f2f2f]" : "bg-[#b3b3b3]";
@@ -20,11 +21,73 @@ export default function ManageDrivers() {
     status: "Active",
   });
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+        const fetchDrivers = async () => {
+            try {
+                // Fetch data from your backend controller path
+                const response = await api.get('/admin/drivers');
+                
+                // Fill the Zustand store with the database records
+                setDrivers(response.data); 
+                console.log("Data successfully fetched from MongoDB");
+            } catch (error) {
+                console.error("Error loading drivers:", error);
+            }
+        };
+
+        fetchDrivers();
+    }, [setDrivers]); // Dependency array ensures it runs once on mount
+
+    const handleSubmit = async (e) => {
     e.preventDefault();
-    editingDriver ? updateDriver(editingDriver, form) : addDriver(form);
-    setShowModal(false);
-  };
+    try {
+        if (editingDriver) {
+            // Update existing driver: PUT request
+            // Path: /api/admin/drivers/{id}
+            const response = await api.put(`/admin/drivers/${editingDriver}`, form);
+            
+            // Update the Zustand store with the edited data
+            updateDriver(response.data); 
+            alert("Driver updated successfully!");
+        } else {
+            // Create new driver: POST request
+            const response = await api.post('/admin/drivers', form);
+            addDriver(response.data);
+            alert("New driver added successfully!");
+        }
+
+        // Close modal and reset state
+        setShowModal(false);
+        setEditingDriver(null);
+        setForm({ name: "", phone: "", license: "", status: "Active" });
+    } catch (error) {
+        console.error("Save failed:", error);
+        alert("Error saving data to database.");
+    }
+};
+  // Function to handle permanent deletion from backend and frontend
+const handleDelete = async (id) => {
+    // Basic validation to ensure an ID is passed
+    if (!id) {
+        console.error("No driver ID provided for deletion");
+        return;
+    }
+
+    if (window.confirm("Are you sure you want to delete this driver?")) {
+        try {
+            // Send DELETE request to the backend API endpoint
+            await api.delete(`/admin/drivers/${id}`); 
+            
+            // Remove the driver from the local Zustand store state
+            deleteDriver(id); 
+            
+            alert("Driver deleted successfully from the database.");
+        } catch (error) {
+            console.error("Delete failed:", error);
+            alert("Delete failed! Please check if the backend server is running.");
+        }
+    }
+};
 
   return (
     <div className="space-y-6">
@@ -73,7 +136,7 @@ export default function ManageDrivers() {
                     Edit
                   </button>
                   <button
-                    onClick={() => deleteDriver(d.id)}
+                  onClick={() => handleDelete(d.id)}
                     className="px-3 py-1 bg-black text-white rounded"
                   >
                     Delete

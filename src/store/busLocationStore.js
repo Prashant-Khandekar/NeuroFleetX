@@ -140,6 +140,26 @@ const useBusLocationStore = create((set) => ({
         b.id === id ? { ...b, lat, lng, speed } : b
       ),
     })),
+
+
+
+fetchLiveBusLocation: async (busId) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/buses/location/${busId}`);
+      if (!response.ok) throw new Error("Network error");
+      const data = await response.json();
+      
+      set((state) => ({
+        buses: state.buses.map((b) =>
+          String(b.id) === String(busId) ? { ...b, lat: data.lat, lng: data.lng } : b
+        ),
+      }));
+    } catch (error) {
+      console.error("Error fetching location:", error);
+    }
+  },
 }));
+
+
 
 export default useBusLocationStore;

@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }) {
   const { darkMode, toggleDarkMode } = useThemeStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const savedBusId = localStorage.getItem("selectedBusId");
 
   const handleLogout = () => {
     logout();
@@ -35,8 +36,8 @@ export default function DashboardLayout({ children }) {
     ],
     driver: [
       { text: "Dashboard", path: "/dashboard/driver", icon: <FaTachometerAlt /> },
-      { text: "My Route", path: "/dashboard/driver/my-route", icon: <FaRoute /> },
-      { text: "Live Location", path: "/dashboard/driver/live-tracking", icon: <FaLocationArrow /> },
+      { text: "My Route", path:savedBusId ? `/dashboard/driver/my-route?busId=${savedBusId}` : "/dashboard/driver/my-route", icon: <FaRoute /> },
+      { text: "Live Location", path: savedBusId ? `/dashboard/driver/live-tracking?busId=${savedBusId}` :"/dashboard/driver/live-tracking", icon: <FaLocationArrow /> },
     ],
     passenger: [
       { text: "Dashboard", path: "/dashboard/passenger", icon: <FaTachometerAlt /> },

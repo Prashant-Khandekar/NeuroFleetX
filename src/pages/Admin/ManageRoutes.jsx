@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
+import api from "../../services/api";
 import useRouteStore from "../../store/routeStore";
 import useThemeStore from "../../store/themeStore";
 
 export default function ManageRoutes() {
-  const { routes, addRoute, updateRoute, deleteRoute } = useRouteStore();
+  const { routes, setRoutes, addRoute, updateRoute, deleteRoute } = useRouteStore();
   const { darkMode } = useThemeStore();
 
   const [showModal, setShowModal] = useState(false);
@@ -12,8 +13,25 @@ export default function ManageRoutes() {
     name: "",
     origin: "",
     destination: "",
-    stops: "",
+    stops: 0,
   });
+  const formFields = ["name", "origin", "destination", "stops"];
+
+  // Fetch routes from Backend on page load
+useEffect(() => {
+    const fetchRoutes = async () => {
+        try {
+            const response = await api.get('/admin/routes');
+            setRoutes(response.data); // This fills your table
+            console.log("Routes loaded:", response.data);
+        } catch (error) {
+            console.error("Error fetching routes:", error);
+        }
+    };
+    fetchRoutes();
+}, [setRoutes]); // Run once on mount
+
+
 
   const cardBg = darkMode
     ? "bg-[#2f2f2f] border-[#3d3d3d]"
@@ -32,22 +50,70 @@ export default function ManageRoutes() {
 
   const openAddModal = () => {
     setEditingRoute(null);
-    setForm({ name: "", origin: "", destination: "", stops: "" });
+    setForm({ name: "", origin: "", destination: "", stops: [{ name: "", latitude: "", longitude: "", sequenceOrder: 1 }] });
     setShowModal(true);
   };
 
-  const openEditModal = (route) => {
-    setEditingRoute(route.id);
-    setForm(route);
-    setShowModal(true);
-  };
+  const addStopRow = () => {
+  setForm({
+    ...form,
+    stops: [...form.stops, { name: "", latitude: "", longitude: "", sequenceOrder: form.stops.length + 1 }]
+  });
+};
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingRoute) updateRoute(editingRoute, form);
-    else addRoute(form);
+const handleStopChange = (index, field, value) => {
+  const newStops = [...form.stops];
+  newStops[index][field] = field === "name" ? value : parseFloat(value) || 0;
+  setForm({ ...form, stops: newStops });
+};
+
+const openEditModal = (route) => {
+  setEditingRoute(route.id || route._id);
+  setForm({
+    name: route.name,
+    origin: route.origin,
+    destination: route.destination,
+   
+    stops: Array.isArray(route.stops) && typeof route.stops[0] === 'object'
+      ? route.stops 
+      : [{ name: "", latitude: 0, longitude: 0, sequenceOrder: 1 }]
+  });
+  setShowModal(true);
+};
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    if (editingRoute) {
+      const response = await api.put(`/admin/routes/${editingRoute}`, form);
+      updateRoute(response.data);
+      alert("Route updated!");
+    } else {
+      const response = await api.post('/admin/routes', form);
+      addRoute(response.data);
+      alert("Route added!");
+    }
     setShowModal(false);
-  };
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Server Error!");
+  }
+};
+const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this route permanently?")) {
+        try {
+            //deletion from mongodb
+            await api.delete(`/admin/routes/${id}`);
+            
+           //removing from screen
+            deleteRoute(id);
+            alert("Route deleted!");
+        } catch (error) {
+            console.error("Delete failed:", error);
+        }
+    }
+};
+
 
   return (
     <div className="space-y-8">
@@ -100,7 +166,9 @@ export default function ManageRoutes() {
                 <td className="p-4 font-medium">{route.name}</td>
                 <td className="p-4">{route.origin}</td>
                 <td className="p-4">{route.destination}</td>
-                <td className="p-4">{route.stops}</td>
+                <td className="p-4">{route.stops && Array.isArray(route.stops) 
+   ? route.stops.map(s => (typeof s === 'object' ? s.name : s)).join(" → ")
+    : "No stops added"}</td>
 
                 <td className="p-4 text-center">
                   <div className="flex gap-3 justify-center">
@@ -112,7 +180,7 @@ export default function ManageRoutes() {
                     </button>
 
                     <button
-                      onClick={() => deleteRoute(route.id)}
+                      onClick={() => handleDelete(route.id || route._id)}
                       className="px-3 py-1 rounded bg-[#8a2f2f] text-white hover:opacity-80"
                     >
                       Delete
@@ -169,16 +237,50 @@ export default function ManageRoutes() {
                 required
               />
 
-              <input
-                type="number"
-                placeholder="Number of Stops"
-                className={`w-full p-3 rounded-lg border outline-none ${inputBg}`}
-                value={form.stops}
-                onChange={(e) =>
-                  setForm({ ...form, stops: e.target.value })
-                }
-                required
-              />
+             <div className="border-t border-gray-600 pt-3">
+          <label className="text-sm font-semibold mb-2 block">Stops & Coordinates</label>
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+            {form.stops.map((stop, index) => (
+              <div key={index} className="space-y-2 p-3 rounded-lg bg-black/20 border border-gray-700">
+                <input
+                  type="text"
+                  placeholder={`Stop ${index + 1} Name`}
+                  className={`w-full p-2 text-sm rounded border outline-none ${inputBg}`}
+                  value={stop.name}
+                  onChange={(e) => handleStopChange(index, "name", e.target.value)}
+                  required
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Latitude"
+                    className={`w-1/2 p-2 text-sm rounded border outline-none ${inputBg}`}
+                    value={stop.latitude}
+                    onChange={(e) => handleStopChange(index, "latitude", e.target.value)}
+                    required
+                  />
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="Longitude"
+                    className={`w-1/2 p-2 text-sm rounded border outline-none ${inputBg}`}
+                    value={stop.longitude}
+                    onChange={(e) => handleStopChange(index, "longitude", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addStopRow}
+            className="mt-3 text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+          >
+            + Add Another Stop
+          </button>
+        </div>
 
               <div className="flex justify-end gap-3 pt-4">
                 <button
